@@ -152,21 +152,26 @@ body.admin .add-wrap{display:block}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Geschenkbox-Pop beim Abhaken */
-.gift-pop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:120;opacity:0}
-.gift-pop.show{opacity:1}
-.gift-pop .halo{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(184,146,74,.22),rgba(184,146,74,0) 70%)}
-.gift-pop.show .halo{animation:halo 1.1s ease-out forwards}
-.gift-pop .box{position:relative;font-size:92px;color:var(--gold);filter:drop-shadow(0 8px 20px rgba(122,94,40,.35))}
-.gift-pop.show .box{animation:giftpop 1.15s cubic-bezier(.18,.9,.32,1.2) forwards}
-.gift-pop .spark{position:absolute;color:var(--gold-l);font-size:20px;opacity:0}
-.gift-pop.show .spark{animation:spark 1s ease-out forwards}
-.gift-pop .s1{--x:-80px;--y:-60px}.gift-pop .s2{--x:84px;--y:-44px}
-.gift-pop .s3{--x:-64px;--y:58px}.gift-pop .s4{--x:72px;--y:62px}
-@keyframes giftpop{0%{transform:scale(.2) rotate(-14deg);opacity:0}28%{transform:scale(1.18) rotate(7deg);opacity:1}48%{transform:scale(.93) rotate(-4deg)}66%{transform:scale(1.06) rotate(2deg)}82%{opacity:1}100%{transform:scale(1) rotate(0);opacity:0}}
-@keyframes halo{0%{transform:scale(.3);opacity:0}35%{opacity:1}100%{transform:scale(1.25);opacity:0}}
-@keyframes spark{0%{opacity:0;transform:translate(var(--x,0),var(--y,0)) scale(.4)}40%{opacity:1}100%{opacity:0;transform:translate(calc(var(--x,0)*1.5),calc(var(--y,0)*1.5)) scale(1)}}
-@media(prefers-reduced-motion:reduce){.gift-pop.show .box,.gift-pop.show .halo,.gift-pop.show .spark{animation-duration:.01s}}
+/* Geschenkbox-Pop beim Abhaken – groß & mittig mit Verdunklung */
+.gift-pop{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.3rem;pointer-events:none;z-index:120;opacity:0;background:radial-gradient(circle at center,rgba(22,15,6,.74),rgba(5,4,2,.9))}
+.gift-pop.show{animation:popLife 1.75s ease forwards}
+.stage{position:relative;width:min(58vw,220px);height:min(58vw,220px);display:flex;align-items:center;justify-content:center}
+.gift-pop .halo{position:absolute;left:50%;top:50%;width:min(90vw,420px);height:min(90vw,420px);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(201,168,98,.4),rgba(201,168,98,0) 66%)}
+.gift-pop.show .halo{animation:haloIn 1.75s ease-out forwards}
+.gift-pop .box{position:relative;font-size:min(42vw,180px);line-height:1;color:var(--gold);filter:drop-shadow(0 16px 44px rgba(201,168,98,.5))}
+.gift-pop.show .box{animation:giftIn .85s cubic-bezier(.16,.8,.24,1.38) both}
+.gift-pop .spark{position:absolute;left:50%;top:50%;margin:-17px 0 0 -17px;color:var(--gold-l);font-size:34px;opacity:0}
+.gift-pop.show .spark{animation:sparkFly 1.2s ease-out forwards}
+.gift-pop .s1{--x:-155px;--y:-125px}.gift-pop .s2{--x:165px;--y:-98px}.gift-pop .s3{--x:-150px;--y:98px}
+.gift-pop .s4{--x:160px;--y:128px}.gift-pop .s5{--x:6px;--y:-182px}.gift-pop .s6{--x:-200px;--y:8px}
+.gift-pop .label{font-family:var(--serif);font-size:min(9vw,34px);font-weight:600;color:var(--gold-l);letter-spacing:.03em;opacity:0}
+.gift-pop.show .label{animation:labelIn 1.75s ease forwards}
+@keyframes popLife{0%{opacity:0}8%{opacity:1}76%{opacity:1}100%{opacity:0}}
+@keyframes giftIn{0%{transform:scale(.12) rotate(-18deg)}52%{transform:scale(1.16) rotate(7deg)}72%{transform:scale(.95) rotate(-3deg)}88%{transform:scale(1.05)}100%{transform:scale(1) rotate(0)}}
+@keyframes haloIn{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.3);opacity:0}}
+@keyframes sparkFly{0%{opacity:0;transform:translate(0,0) scale(.3)}35%{opacity:1}100%{opacity:0;transform:translate(var(--x,0),var(--y,0)) scale(1.15)}}
+@keyframes labelIn{0%{opacity:0;transform:translateY(14px)}30%{opacity:0;transform:translateY(14px)}50%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.gift-pop.show,.gift-pop.show *{animation-duration:.6s!important}}
 @media(max-width:460px){
   .hdr h1{font-size:34px}
   .thumb{width:76px;min-width:76px;height:76px}
@@ -226,12 +231,17 @@ body.admin .add-wrap{display:block}
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept="image/*" hidden/>
 <div class="gift-pop" id="giftPop" aria-hidden="true">
-  <div class="halo"></div>
-  <i class="ti ti-gift box"></i>
-  <i class="ti ti-sparkles spark s1"></i>
-  <i class="ti ti-sparkles spark s2"></i>
-  <i class="ti ti-sparkles spark s3"></i>
-  <i class="ti ti-sparkles spark s4"></i>
+  <div class="stage">
+    <div class="halo"></div>
+    <i class="ti ti-gift box"></i>
+    <i class="ti ti-sparkles spark s1"></i>
+    <i class="ti ti-sparkles spark s2"></i>
+    <i class="ti ti-sparkles spark s3"></i>
+    <i class="ti ti-sparkles spark s4"></i>
+    <i class="ti ti-sparkles spark s5"></i>
+    <i class="ti ti-sparkles spark s6"></i>
+  </div>
+  <div class="label">Verschenkt!</div>
 </div>
 
 <!-- Firebase (wird beim Deploy mit euren Zugangsdaten gefüllt) -->
@@ -407,7 +417,7 @@ function unreserve(id){ setReservation(id,null); toast('Wieder freigegeben'); }
 function playGiftPop(){
   const el=document.getElementById('giftPop'); if(!el) return;
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1250);
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1750);
 }
 
 /* ============ ADMIN ============ */
