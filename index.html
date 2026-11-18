@@ -68,7 +68,8 @@ body{font-family:var(--body);color:var(--ink);line-height:1.5}
   box-shadow:0 1px 2px rgba(28,18,8,.03),0 6px 20px rgba(28,18,8,.045);
   transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s}
 .card:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(28,18,8,.04),0 12px 32px rgba(28,18,8,.07)}
-.card.taken{background:var(--c1);border-color:var(--c3);box-shadow:none}
+.card.taken{background:var(--c1);border-color:var(--c3);box-shadow:none;filter:grayscale(.65) opacity(.78)}
+.card.taken:hover{transform:none}
 
 /* THUMB rechts */
 .thumb{position:relative;order:2;flex-shrink:0;width:96px;height:96px;border-radius:16px;background:linear-gradient(150deg,var(--c1),var(--c2));
@@ -147,6 +148,22 @@ body.admin .add-wrap{display:block}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Geschenkbox-Pop beim Abhaken */
+.gift-pop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:120;opacity:0}
+.gift-pop.show{opacity:1}
+.gift-pop .halo{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(184,146,74,.22),rgba(184,146,74,0) 70%)}
+.gift-pop.show .halo{animation:halo 1.1s ease-out forwards}
+.gift-pop .box{position:relative;font-size:92px;color:var(--gold);filter:drop-shadow(0 8px 20px rgba(122,94,40,.35))}
+.gift-pop.show .box{animation:giftpop 1.15s cubic-bezier(.18,.9,.32,1.2) forwards}
+.gift-pop .spark{position:absolute;color:var(--gold-l);font-size:20px;opacity:0}
+.gift-pop.show .spark{animation:spark 1s ease-out forwards}
+.gift-pop .s1{--x:-80px;--y:-60px}.gift-pop .s2{--x:84px;--y:-44px}
+.gift-pop .s3{--x:-64px;--y:58px}.gift-pop .s4{--x:72px;--y:62px}
+@keyframes giftpop{0%{transform:scale(.2) rotate(-14deg);opacity:0}28%{transform:scale(1.18) rotate(7deg);opacity:1}48%{transform:scale(.93) rotate(-4deg)}66%{transform:scale(1.06) rotate(2deg)}82%{opacity:1}100%{transform:scale(1) rotate(0);opacity:0}}
+@keyframes halo{0%{transform:scale(.3);opacity:0}35%{opacity:1}100%{transform:scale(1.25);opacity:0}}
+@keyframes spark{0%{opacity:0;transform:translate(var(--x,0),var(--y,0)) scale(.4)}40%{opacity:1}100%{opacity:0;transform:translate(calc(var(--x,0)*1.5),calc(var(--y,0)*1.5)) scale(1)}}
+@media(prefers-reduced-motion:reduce){.gift-pop.show .box,.gift-pop.show .halo,.gift-pop.show .spark{animation-duration:.01s}}
 @media(max-width:460px){
   .hdr h1{font-size:34px}
   .thumb{width:76px;min-width:76px;height:76px}
@@ -205,6 +222,14 @@ body.admin .add-wrap{display:block}
 </div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept="image/*" hidden/>
+<div class="gift-pop" id="giftPop" aria-hidden="true">
+  <div class="halo"></div>
+  <i class="ti ti-gift box"></i>
+  <i class="ti ti-sparkles spark s1"></i>
+  <i class="ti ti-sparkles spark s2"></i>
+  <i class="ti ti-sparkles spark s3"></i>
+  <i class="ti ti-sparkles spark s4"></i>
+</div>
 
 <!-- Firebase (wird beim Deploy mit euren Zugangsdaten gefüllt) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -322,7 +347,7 @@ function render(){
 
     const action = taken
       ? `<span class="taken-badge"><i class="ti ti-gift"></i> Verschenkt${r.by?' von '+esc(r.by):''}</span>
-         ${(mine)?`<button class="undo" onclick="unreserve('${it.id}')">zurücknehmen</button>`:''}`
+         <button class="undo" onclick="unreserve('${it.id}')">zurücknehmen</button>`
       : `<button class="btn-gift" onclick="reserve('${it.id}')"><i class="ti ti-gift"></i> Ich schenke das</button>`;
 
     const noteHtml=(it.note||isAdmin)
@@ -373,9 +398,15 @@ function reserve(id){
   if(!name){ name=(window.prompt('Dein Name (damit die anderen wissen, dass es vergeben ist):')||'').trim();
     if(name){ guestName=name; localStorage.setItem(LS.name,name); } }
   setReservation(id,{by:name||'',cid:clientId,at:Date.now()});
+  playGiftPop();
   toast('Danke! 🎁 Als „verschenkt" markiert');
 }
 function unreserve(id){ setReservation(id,null); toast('Wieder freigegeben'); }
+function playGiftPop(){
+  const el=document.getElementById('giftPop'); if(!el) return;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1250);
+}
 
 /* ============ ADMIN ============ */
 function toggleAdmin(){
