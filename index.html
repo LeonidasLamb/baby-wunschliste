@@ -71,12 +71,15 @@ body{font-family:var(--body);color:var(--ink);line-height:1.5}
 .card.taken{background:var(--c1);border-color:var(--c3);box-shadow:none}
 
 /* THUMB rechts */
-.thumb{order:2;flex-shrink:0;width:96px;height:96px;border-radius:16px;background:linear-gradient(150deg,var(--c1),var(--c2));
+.thumb{position:relative;order:2;flex-shrink:0;width:96px;height:96px;border-radius:16px;background:linear-gradient(150deg,var(--c1),var(--c2));
   border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center;
   box-shadow:inset 0 1px 2px rgba(255,255,255,.6)}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb .ph{font-family:var(--serif);font-size:32px;color:var(--gold);opacity:.4;font-weight:600;letter-spacing:.02em}
 .card.taken .thumb img{filter:grayscale(.35) opacity(.75)}
+.thumb .cam{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(28,18,8,.42);color:#fff;font-size:20px;opacity:1}
+.thumb .cam small{font-family:var(--sans);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase}
+body:not(.admin) .thumb .cam{display:none}
 
 /* INFO links */
 .info{order:1;flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
@@ -201,6 +204,7 @@ body.admin .add-wrap{display:block}
   <div class="footer">Mit <span class="heart">♥</span> zusammengestellt</div>
 </div>
 <div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="image/*" hidden/>
 
 <!-- Firebase (wird beim Deploy mit euren Zugangsdaten gefüllt) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -296,10 +300,13 @@ function render(){
     const taken=!!r;
     const mine = r && r.cid===clientId;
     const price=fmtPrice(it.price);
+    const isAdmin=document.body.classList.contains('admin');
     const initials=(it.name||'?').replace(/[^A-Za-zÄÖÜäöü ]/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'♥';
-    const thumb = it.img
-      ? `<div class="thumb"><img src="${esc(it.img)}" alt="" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>${initials}</span>'"/></div>`
-      : `<div class="thumb"><span class="ph">${initials}</span></div>`;
+    const thumbInner = it.img
+      ? `<img src="${esc(it.img)}" alt=""/>`
+      : `<span class="ph">${initials}</span>`;
+    const camOverlay = isAdmin ? `<span class="cam"><i class="ti ti-camera"></i><small>Foto</small></span>` : '';
+    const thumb = `<div class="thumb"${isAdmin?` onclick="uploadPhoto('${it.id}')" style="cursor:pointer"`:''}>${thumbInner}${camOverlay}</div>`;
     const linkico = it.link ? `<a class="linkico" href="${esc(it.link)}" target="_blank" rel="noopener" title="Zum Produkt"><i class="ti ti-external-link"></i></a>` : '';
     const nameHtml = it.link
       ? `<a href="${esc(it.link)}" target="_blank" rel="noopener"><span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span></a>`
@@ -310,7 +317,6 @@ function render(){
          ${(mine)?`<button class="undo" onclick="unreserve('${it.id}')">zurücknehmen</button>`:''}`
       : `<button class="btn-gift" onclick="reserve('${it.id}')"><i class="ti ti-gift"></i> Ich schenke das</button>`;
 
-    const isAdmin=document.body.classList.contains('admin');
     const noteHtml=(it.note||isAdmin)
       ? `<div class="note editable" data-id="${it.id}" data-f="note" contenteditable="false"${it.note?'':' style="opacity:.45"'}>${it.note?esc(it.note):(isAdmin?'Notiz / Farbe…':'')}</div>`
       : '';
@@ -320,7 +326,7 @@ function render(){
           <div class="name">${nameHtml}</div>
           ${linkico}
           <div class="adm">
-            <button class="adm-btn" onclick="editItem('${it.id}')" title="Link & Bild"><i class="ti ti-photo"></i></button>
+            <button class="adm-btn" onclick="editLink('${it.id}')" title="Link ändern"><i class="ti ti-link"></i></button>
             <button class="adm-btn del" onclick="removeItem('${it.id}')" title="Löschen"><i class="ti ti-trash"></i></button>
           </div>
         </div>
@@ -372,11 +378,28 @@ function toggleAdmin(){
   document.getElementById('admBtn').innerHTML = on?'<i class="ti ti-check"></i> Fertig':'<i class="ti ti-pencil"></i> Bearbeiten';
   render();
 }
-function editItem(id){
+function editLink(id){
   const it=items[id]; if(!it)return;
-  const link=window.prompt('Link (günstigster Anbieter):', it.link||''); if(link!==null) it.link=link.trim();
-  const img=window.prompt('Bild-URL (leer lassen für Platzhalter):', it.img||''); if(img!==null) it.img=img.trim();
-  saveItem(it);
+  const link=window.prompt('Link (günstigster Anbieter):', it.link||'');
+  if(link!==null){ it.link=link.trim(); saveItem(it); toast('Link aktualisiert'); }
+}
+function uploadPhoto(id){
+  const inp=document.getElementById('fileInput');
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0]; if(!f){ return; }
+    const rd=new FileReader();
+    rd.onload=e=>{ const img=new Image(); img.onload=()=>{
+      const S=440,c=document.createElement('canvas');c.width=S;c.height=S;
+      const ctx=c.getContext('2d');
+      const scale=Math.max(S/img.width,S/img.height),w=img.width*scale,h=img.height*scale;
+      ctx.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+      let data; try{ data=c.toDataURL('image/jpeg',0.82); }catch(err){ toast('Bild konnte nicht gelesen werden'); return; }
+      const it=items[id]; if(it){ it.img=data; saveItem(it); toast('Bild aktualisiert 📷'); }
+      inp.value='';
+    }; img.onerror=()=>toast('Bildformat nicht unterstützt'); img.src=e.target.result; };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
 }
 function toggleAddForm(){ document.getElementById('addForm').classList.toggle('open'); }
 function addItem(){
