@@ -406,10 +406,7 @@ function updateProgress(){
 
 /* ============ GUEST ACTIONS ============ */
 function reserve(id){
-  let name=guestName;
-  if(!name){ name=(window.prompt('Dein Name (damit die anderen wissen, dass es vergeben ist):')||'').trim();
-    if(name){ guestName=name; localStorage.setItem(LS.name,name); } }
-  setReservation(id,{by:name||'',cid:clientId,at:Date.now()});
+  setReservation(id,{by:'',cid:clientId,at:Date.now()});
   playGiftPop();
   toast('Danke! 🎁 Als „verschenkt" markiert');
 }
@@ -421,13 +418,26 @@ function playGiftPop(){
 }
 
 /* ============ ADMIN ============ */
+const ADMIN_CODE='baby2027';
+function setAdminBtn(on){
+  const b=document.getElementById('admBtn'); if(!b) return;
+  b.classList.toggle('on',on);
+  b.innerHTML = on?'<i class="ti ti-check"></i> Fertig':'<i class="ti ti-pencil"></i> Bearbeiten';
+}
 function toggleAdmin(){
-  const on=!document.body.classList.contains('admin');
-  document.body.classList.toggle('admin',on);
-  localStorage.setItem(LS.admin,on?'1':'');
-  document.getElementById('admBtn').classList.toggle('on',on);
-  document.getElementById('admBtn').innerHTML = on?'<i class="ti ti-check"></i> Fertig':'<i class="ti ti-pencil"></i> Bearbeiten';
-  render();
+  const on=document.body.classList.contains('admin');
+  if(on){ // ausschalten
+    document.body.classList.remove('admin');
+    try{localStorage.removeItem(LS.admin);}catch(e){}
+    setAdminBtn(false); render(); return;
+  }
+  // einschalten – Code abfragen
+  const code=window.prompt('Bearbeiten-Code eingeben:');
+  if(code===null) return;
+  if(code.trim().toLowerCase()!==ADMIN_CODE){ toast('Falscher Code'); return; }
+  document.body.classList.add('admin');
+  try{localStorage.setItem(LS.admin,'1');}catch(e){}
+  setAdminBtn(true); render();
 }
 function editLink(id){
   const it=items[id]; if(!it)return;
@@ -467,10 +477,12 @@ function addItem(){
 /* ============ INIT ============ */
 (function init(){
   // Admin via #admin oder gespeichert
-  const canAdmin = location.hash==='#admin' || localStorage.getItem(LS.admin);
-  if(canAdmin){ document.body.classList.add('admin'); }
-  document.getElementById('admBtn').hidden = !canAdmin;
-  if(document.body.classList.contains('admin')){ document.getElementById('admBtn').classList.add('on'); document.getElementById('admBtn').innerHTML='<i class="ti ti-check"></i> Fertig'; }
+  if(location.hash==='#admin' || localStorage.getItem(LS.admin)){
+    document.body.classList.add('admin');
+    try{localStorage.setItem(LS.admin,'1');}catch(e){}
+  }
+  document.getElementById('admBtn').hidden=false;
+  setAdminBtn(document.body.classList.contains('admin'));
 
   loadLocal();
   const sv=localStorage.getItem('bwl-sv');
