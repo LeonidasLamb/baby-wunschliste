@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Baby-Wunschliste</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#F7F1E8"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Wunschliste"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+/* LAYOUT: zentrierte Spalte, Karten-Liste, kein Preis-Total — beige/gold "classy registry" */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --c0:#FDFAF5;--c1:#F7F1E8;--c2:#EDE3D2;--c3:#E3D4BC;
+  --gold:#B8924A;--gold-l:#E8D5A8;--gold-d:#7A5E28;--gold-t:#6B4F1E;
+  --ink:#1C1208;--ink2:#4A3420;--ink3:#8A6E50;--ink4:#B09070;
+  --line:#E8DFD0;--line2:#D8C9B2;
+  --green:#5E7E4A;--green-bg:#EFF3E6;
+  --serif:'Cormorant Garamond','Georgia',serif;
+  --body:'Georgia','Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html,body{background:var(--c0);min-height:100%}
+body{font-family:var(--body);color:var(--ink);line-height:1.5}
+.page{max-width:680px;margin:0 auto;padding:0 0 calc(4rem + env(safe-area-inset-bottom))}
+
+/* HEADER */
+.hdr{padding:calc(2.5rem + env(safe-area-inset-top)) 1.5rem 1.5rem;text-align:center}
+.hdr-eyebrow{font-family:var(--sans);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem}
+.hdr h1{font-family:var(--serif);font-size:42px;font-weight:500;letter-spacing:.01em;line-height:1.05;color:var(--ink);text-wrap:balance}
+.hdr-sub{font-family:var(--serif);font-size:19px;font-style:italic;color:var(--ink3);margin-top:.5rem;font-weight:400}
+.ornament{display:flex;align-items:center;gap:.8rem;margin:1.4rem auto 0;max-width:220px}
+.ornament::before,.ornament::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold))}
+.ornament::after{background:linear-gradient(to left,transparent,var(--gold))}
+.ornament i{color:var(--gold);font-size:14px}
+
+/* INTRO CARD */
+.intro{margin:1.5rem 1.5rem 0;background:var(--c1);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.25rem;font-family:var(--sans);font-size:13px;line-height:1.65;color:var(--ink2);text-align:center}
+.intro b{color:var(--gold-t);font-weight:600}
+
+/* PROGRESS (nur Anzahl, kein Preis) */
+.prog{margin:1.25rem 1.5rem 0;display:flex;align-items:center;gap:.75rem}
+.prog-track{flex:1;height:3px;background:var(--c2);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(to right,var(--gold-l),var(--gold));border-radius:2px;transition:width .5s ease;width:0}
+.prog-label{font-family:var(--sans);font-size:11px;letter-spacing:.04em;color:var(--ink3);white-space:nowrap}
+.prog-label b{color:var(--gold-t);font-weight:600}
+
+/* SYNC PILL */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.5rem 0}
+.sync{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:11px;letter-spacing:.04em;color:var(--ink4);border:1px solid var(--line2);border-radius:20px;padding:.3rem .8rem;background:var(--c0)}
+.sync i{font-size:13px}
+.sync.ok{color:var(--green);border-color:#CBD9BA}
+.sync.syncing i{animation:spin .8s linear infinite;color:var(--gold)}
+.sync.off{color:var(--ink4)}
+.admin-toggle{font-family:var(--sans);font-size:11px;letter-spacing:.04em;color:var(--ink4);background:none;border:1px solid var(--line2);border-radius:20px;padding:.3rem .8rem;cursor:pointer}
+.admin-toggle.on{color:var(--gold-t);border-color:var(--gold);background:var(--c1)}
+
+/* LIST */
+.list{padding:1.5rem 1.5rem 0;display:flex;flex-direction:column;gap:14px}
+.card{display:flex;gap:16px;align-items:center;
+  background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 18px;position:relative;
+  box-shadow:0 1px 2px rgba(28,18,8,.03),0 6px 20px rgba(28,18,8,.045);
+  transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s}
+.card:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(28,18,8,.04),0 12px 32px rgba(28,18,8,.07)}
+.card.taken{background:var(--c1);border-color:var(--c3);box-shadow:none}
+
+/* THUMB rechts */
+.thumb{order:2;flex-shrink:0;width:96px;height:96px;border-radius:16px;background:linear-gradient(150deg,var(--c1),var(--c2));
+  border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.6)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .ph{font-family:var(--serif);font-size:32px;color:var(--gold);opacity:.4;font-weight:600;letter-spacing:.02em}
+.card.taken .thumb img{filter:grayscale(.35) opacity(.75)}
+
+/* INFO links */
+.info{order:1;flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.name-row{display:flex;align-items:flex-start;gap:9px}
+.name{font-family:var(--serif);font-size:23px;font-weight:600;line-height:1.1;color:var(--ink);letter-spacing:.005em;min-width:0}
+.name a{color:inherit;text-decoration:none;background-image:linear-gradient(var(--gold-l),var(--gold-l));background-size:100% 1.5px;background-repeat:no-repeat;background-position:0 100%;transition:background-size .2s}
+.name a:hover{background-image:linear-gradient(var(--gold),var(--gold))}
+.linkico{flex-shrink:0;margin-top:2px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--gold-t);text-decoration:none;font-size:14px;transition:all .18s;background:var(--c0)}
+.linkico:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05)}
+.note{font-family:var(--sans);font-size:12px;letter-spacing:.02em;color:var(--ink4)}
+.price{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--gold-t);letter-spacing:.01em;font-variant-numeric:tabular-nums;margin-top:1px}
+.price .ca{font-weight:400;color:var(--ink4);font-size:11px;margin-right:3px;letter-spacing:.04em}
+.price.empty{color:var(--ink4);font-weight:400;font-style:italic;font-family:var(--serif);font-size:15px}
+
+/* ACTION */
+.act{display:flex;align-items:center;gap:10px;margin-top:4px}
+.btn-gift{font-family:var(--sans);font-size:12.5px;font-weight:500;letter-spacing:.02em;color:#fff;
+  background:var(--gold);border:none;border-radius:11px;padding:.6rem 1.15rem;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;transition:background .18s,transform .1s;
+  box-shadow:0 1px 2px rgba(122,94,40,.25)}
+.btn-gift:hover{background:var(--gold-d)}
+.btn-gift:active{transform:scale(.97)}
+.taken-badge{font-family:var(--sans);font-size:12.5px;letter-spacing:.02em;color:var(--green);display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.taken-badge i{font-size:16px}
+.undo{font-family:var(--sans);font-size:11px;color:var(--ink4);background:none;border:none;cursor:pointer;margin-left:auto;letter-spacing:.02em;transition:color .15s}
+.undo:hover{color:var(--gold-t)}
+
+/* ADMIN edit affordances */
+.adm{display:none;gap:6px;margin-left:auto}
+body.admin .adm{display:inline-flex}
+.adm-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--line2);background:var(--c0);color:var(--ink4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.adm-btn:hover{color:var(--gold-t);border-color:var(--gold)}
+.adm-btn.del:hover{color:#b44;border-color:#e4b9b9;background:#fdf5f5}
+body:not(.admin) .editable{pointer-events:none}
+body.admin .editable{outline:1px dashed transparent;border-radius:4px;transition:outline-color .15s;cursor:text}
+body.admin .editable:hover{outline-color:var(--line2)}
+body.admin .editable:focus{outline:1px solid var(--gold);background:#fff;padding:1px 3px}
+
+/* ADD FORM */
+.add-wrap{padding:1.25rem 1.5rem 0;display:none}
+body.admin .add-wrap{display:block}
+.add-btn{width:100%;font-family:var(--sans);font-size:12px;letter-spacing:.06em;color:var(--ink3);background:none;border:1.5px dashed var(--line2);border-radius:12px;padding:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.add-btn:hover{border-color:var(--gold);color:var(--gold-t);background:var(--c1)}
+.add-form{display:none;background:var(--c1);border:1px solid var(--line2);border-radius:14px;padding:1.1rem;margin-top:.6rem}
+.add-form.open{display:block}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:.6rem}
+.fg label{font-family:var(--sans);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4)}
+.fg input{border:1px solid var(--line2);border-radius:8px;padding:.5rem .7rem;font-size:14px;font-family:var(--body);background:#fff;outline:none;width:100%}
+.fg input:focus{border-color:var(--gold)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.fact{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem}
+.fbtn{font-family:var(--sans);font-size:12px;letter-spacing:.05em;padding:.5rem 1.1rem;border-radius:8px;border:none;cursor:pointer}
+.fbtn-p{background:var(--gold);color:#fff}.fbtn-p:hover{background:var(--gold-d)}
+.fbtn-s{background:none;border:1px solid var(--line2);color:var(--ink3)}
+
+/* FOOTER */
+.footer{text-align:center;padding:2.5rem 1.5rem 1rem;font-family:var(--sans);font-size:10px;letter-spacing:.14em;color:var(--ink4);text-transform:uppercase}
+.footer .heart{color:var(--gold);font-size:12px}
+
+/* EMPTY */
+.list-empty{text-align:center;padding:2.5rem 1.5rem;font-family:var(--serif);font-size:19px;font-style:italic;color:var(--ink4)}
+
+/* TOAST */
+.toast{position:fixed;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;font-family:var(--sans);font-size:12.5px;letter-spacing:.03em;padding:.6rem 1.3rem;border-radius:22px;opacity:0;transition:all .3s;pointer-events:none;z-index:50;max-width:calc(100vw - 2rem);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:460px){
+  .hdr h1{font-size:34px}
+  .thumb{width:76px;min-width:76px;height:76px}
+  .name{font-size:19px}
+  .list{padding-left:1rem;padding-right:1rem}
+  .intro,.prog{margin-left:1rem;margin-right:1rem}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <span class="sync off" id="sync"><i class="ti ti-cloud"></i><span id="syncTxt">Verbinde…</span></span>
+    <button class="admin-toggle" id="admBtn" onclick="toggleAdmin()" hidden><i class="ti ti-pencil"></i> Bearbeiten</button>
+  </div>
+
+  <div class="hdr">
+    <div class="hdr-eyebrow">Baby-Party · Wunschliste</div>
+    <h1 id="title">Für unser kleines Wunder</h1>
+    <div class="hdr-sub" id="subtitle">Pick dir etwas aus, das dir gefällt</div>
+    <div class="ornament"><i class="ti ti-baby-carriage"></i></div>
+  </div>
+
+  <div class="intro" id="intro">
+    Schön, dass du da bist. Such dir einfach etwas aus und tippe auf <b>„Ich schenke das"</b> —
+    dann wissen die anderen Gäste, dass es schon vergeben ist. Keine Anmeldung nötig. 🤍
+  </div>
+
+  <div class="prog">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-label"><b id="progDone">0</b> von <b id="progTotal">0</b> schon verschenkt</span>
+  </div>
+
+  <div class="list" id="list">
+    <div class="list-empty">Die Wunschliste wird vorbereitet…</div>
+  </div>
+
+  <div class="add-wrap">
+    <button class="add-btn" onclick="toggleAddForm()"><i class="ti ti-plus"></i> Artikel hinzufügen</button>
+    <div class="add-form" id="addForm">
+      <div class="fg"><label>Produktname</label><input id="f-name" placeholder="z.B. Nuna Kinderwagen-Organizer"/></div>
+      <div class="frow">
+        <div class="fg"><label>Preis (€, grob)</label><input id="f-price" placeholder="z.B. 39,90"/></div>
+        <div class="fg"><label>Farbe / Notiz</label><input id="f-note" placeholder="z.B. Chestnut"/></div>
+      </div>
+      <div class="fg"><label>Link (günstigster Anbieter)</label><input id="f-link" placeholder="https://…"/></div>
+      <div class="fg"><label>Bild-URL (optional)</label><input id="f-img" placeholder="https://…/bild.jpg"/></div>
+      <div class="fact">
+        <button class="fbtn fbtn-s" onclick="toggleAddForm()">Abbrechen</button>
+        <button class="fbtn fbtn-p" onclick="addItem()">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Mit <span class="heart">♥</span> zusammengestellt</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (wird beim Deploy mit euren Zugangsdaten gefüllt) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ============ KONFIG ============ */
+const FIREBASE_CONFIG = null; /* <-- wird beim Deploy ersetzt */
+
+/* Seed-Artikel aus deinen Links (Preise/Bilder im Bearbeiten-Modus ergänzen) */
+const SEED = [
+  {id:'i1', name:'Nuna Kinderwagen-Organizer', note:'', price:'', link:'https://nunababy.eu/de/kinderwagen-organizer', img:'', order:1},
+  {id:'i2', name:'Nuna Winter-Kinderwagen-Set (Merinowolle)', note:'Chestnut oder Schwarz', price:'', link:'https://nunababy.eu/de/winter-kinderwagen-set-merinowolle', img:'', order:2},
+  {id:'i3', name:'Nuna Winter-Fußsackset mit Handschuhen', note:'Biscotti', price:'', link:'https://www.babysparadies.com/Nuna+Winterfusssackset+mit+Handschuhe+Biscotti.htm', img:'', order:3},
+  {id:'i4', name:'Thyseed Smart-Produkt', note:'Produkt auf Seite auswählen', price:'', link:'https://www.thyseed.com/collections/all-products', img:'', order:4},
+  {id:'i5', name:'Kaufland-Artikel', note:'Produkt prüfen', price:'', link:'https://www.kaufland.de/product/551958756/', img:'', order:5},
+];
+
+/* ============ STATE ============ */
+let items = {};        // id -> item
+let reservations = {}; // id -> {by, at}
+let db = null, online = false;
+const LS = { items:'bwl-items', res:'bwl-res', name:'bwl-name', cid:'bwl-cid', admin:'bwl-admin' };
+
+let clientId = localStorage.getItem(LS.cid) || ('g'+Math.random().toString(36).slice(2,10));
+localStorage.setItem(LS.cid, clientId);
+let guestName = localStorage.getItem(LS.name) || '';
+
+/* ============ UTILS ============ */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m,d=2600){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),d);}
+function fmtPrice(p){ if(!p) return ''; const s=String(p).trim(); if(/€|eur/i.test(s)) return s; return s.replace('.',',')+' €'; }
+function sortedItems(){ return Object.values(items).sort((a,b)=>(a.order||0)-(b.order||0)); }
+
+function setSync(state,txt){
+  const el=document.getElementById('sync');
+  el.className='sync '+state;
+  const icon = state==='ok'?'ti-cloud-check':state==='syncing'?'ti-loader-2':'ti-cloud-off';
+  el.innerHTML=`<i class="ti ${icon}"></i><span>${txt}</span>`;
+}
+
+/* ============ PERSISTENCE ============ */
+function cacheLocal(){ try{localStorage.setItem(LS.items,JSON.stringify(items));localStorage.setItem(LS.res,JSON.stringify(reservations));}catch(e){} }
+function loadLocal(){ try{items=JSON.parse(localStorage.getItem(LS.items)||'null')||{};reservations=JSON.parse(localStorage.getItem(LS.res)||'{}');}catch(e){items={};reservations={};} }
+
+function saveItem(it){
+  items[it.id]=it; cacheLocal(); render();
+  if(online){ setSync('syncing','Speichern…'); db.ref('items/'+it.id).set(it).then(()=>setSync('ok','Gespeichert')).catch(()=>setSync('off','Offline')); }
+}
+function removeItem(id){
+  delete items[id]; delete reservations[id]; cacheLocal(); render();
+  if(online){ db.ref('items/'+id).remove(); db.ref('reservations/'+id).remove(); }
+}
+function setReservation(id,val){
+  if(val) reservations[id]=val; else delete reservations[id];
+  cacheLocal(); render();
+  if(online){ setSync('syncing','Speichern…'); const r=db.ref('reservations/'+id);
+    (val?r.set(val):r.remove()).then(()=>setSync('ok','Gespeichert')).catch(()=>setSync('off','Offline')); }
+}
+
+/* ============ FIREBASE ============ */
+function initFirebase(){
+  if(!FIREBASE_CONFIG){ setSync('off','Lokaler Modus'); return; }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.database(); online=true;
+    setSync('syncing','Verbinde…');
+    db.ref('items').on('value',s=>{
+      const v=s.val();
+      if(v && Object.keys(v).length){ items=v; }
+      else { // leere DB -> Seed einspielen
+        SEED.forEach(it=>db.ref('items/'+it.id).set(it));
+        items={}; SEED.forEach(it=>items[it.id]=it);
+      }
+      cacheLocal(); render(); setSync('ok','Live synchron');
+    },()=>setSync('off','Offline'));
+    db.ref('reservations').on('value',s=>{ reservations=s.val()||{}; cacheLocal(); render(); });
+  }catch(e){ online=false; setSync('off','Lokaler Modus'); }
+}
+
+/* ============ RENDER ============ */
+function render(){
+  const list=document.getElementById('list');
+  const arr=sortedItems();
+  if(!arr.length){ list.innerHTML='<div class="list-empty">Noch keine Wünsche eingetragen.</div>'; updateProgress(); return; }
+
+  list.innerHTML = arr.map(it=>{
+    const r=reservations[it.id];
+    const taken=!!r;
+    const mine = r && r.cid===clientId;
+    const price=fmtPrice(it.price);
+    const initials=(it.name||'?').replace(/[^A-Za-zÄÖÜäöü ]/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'♥';
+    const thumb = it.img
+      ? `<div class="thumb"><img src="${esc(it.img)}" alt="" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>${initials}</span>'"/></div>`
+      : `<div class="thumb"><span class="ph">${initials}</span></div>`;
+    const linkico = it.link ? `<a class="linkico" href="${esc(it.link)}" target="_blank" rel="noopener" title="Zum Produkt"><i class="ti ti-external-link"></i></a>` : '';
+    const nameHtml = it.link
+      ? `<a href="${esc(it.link)}" target="_blank" rel="noopener"><span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span></a>`
+      : `<span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span>`;
+
+    const action = taken
+      ? `<span class="taken-badge"><i class="ti ti-gift"></i> Verschenkt${r.by?' von '+esc(r.by):''}</span>
+         ${(mine)?`<button class="undo" onclick="unreserve('${it.id}')">zurücknehmen</button>`:''}`
+      : `<button class="btn-gift" onclick="reserve('${it.id}')"><i class="ti ti-gift"></i> Ich schenke das</button>`;
+
+    const isAdmin=document.body.classList.contains('admin');
+    const noteHtml=(it.note||isAdmin)
+      ? `<div class="note editable" data-id="${it.id}" data-f="note" contenteditable="false"${it.note?'':' style="opacity:.45"'}>${it.note?esc(it.note):(isAdmin?'Notiz / Farbe…':'')}</div>`
+      : '';
+    return `<div class="card ${taken?'taken':''}">
+      <div class="info">
+        <div class="name-row">
+          <div class="name">${nameHtml}</div>
+          ${linkico}
+          <div class="adm">
+            <button class="adm-btn" onclick="editItem('${it.id}')" title="Link & Bild"><i class="ti ti-photo"></i></button>
+            <button class="adm-btn del" onclick="removeItem('${it.id}')" title="Löschen"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+        ${noteHtml}
+        <div class="price ${price?'':'empty'} editable" data-id="${it.id}" data-f="price" contenteditable="false">${price?`<span class="ca">ca.</span>${price}`:'Preis folgt'}</div>
+        <div class="act">${action}</div>
+      </div>
+      ${thumb}
+    </div>`;
+  }).join('');
+
+  // editable wiring (nur Admin)
+  if(document.body.classList.contains('admin')){
+    list.querySelectorAll('.editable').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.onblur=()=>{ const it=items[el.dataset.id]; if(!it)return; let v=el.innerText.trim();
+        if(el.dataset.f==='price'){ v=v.replace(/^ca\.\s*/i,'').replace(/preis folgt/i,''); }
+        it[el.dataset.f]=v; saveItem(it); };
+      el.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();el.blur();} };
+    });
+  }
+  updateProgress();
+}
+
+function updateProgress(){
+  const total=Object.keys(items).length;
+  const done=Object.keys(reservations).filter(id=>items[id]).length;
+  document.getElementById('progTotal').textContent=total;
+  document.getElementById('progDone').textContent=done;
+  document.getElementById('progFill').style.width=(total?Math.round(done/total*100):0)+'%';
+}
+
+/* ============ GUEST ACTIONS ============ */
+function reserve(id){
+  let name=guestName;
+  if(!name){ name=(window.prompt('Dein Name (damit die anderen wissen, dass es vergeben ist):')||'').trim();
+    if(name){ guestName=name; localStorage.setItem(LS.name,name); } }
+  setReservation(id,{by:name||'',cid:clientId,at:Date.now()});
+  toast('Danke! 🎁 Als „verschenkt" markiert');
+}
+function unreserve(id){ setReservation(id,null); toast('Wieder freigegeben'); }
+
+/* ============ ADMIN ============ */
+function toggleAdmin(){
+  const on=!document.body.classList.contains('admin');
+  document.body.classList.toggle('admin',on);
+  localStorage.setItem(LS.admin,on?'1':'');
+  document.getElementById('admBtn').classList.toggle('on',on);
+  document.getElementById('admBtn').innerHTML = on?'<i class="ti ti-check"></i> Fertig':'<i class="ti ti-pencil"></i> Bearbeiten';
+  render();
+}
+function editItem(id){
+  const it=items[id]; if(!it)return;
+  const link=window.prompt('Link (günstigster Anbieter):', it.link||''); if(link!==null) it.link=link.trim();
+  const img=window.prompt('Bild-URL (leer lassen für Platzhalter):', it.img||''); if(img!==null) it.img=img.trim();
+  saveItem(it);
+}
+function toggleAddForm(){ document.getElementById('addForm').classList.toggle('open'); }
+function addItem(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){ toast('Bitte einen Namen eingeben'); return; }
+  const id='i'+Date.now().toString(36);
+  const order=(Math.max(0,...Object.values(items).map(i=>i.order||0))+1);
+  saveItem({id,name,note:document.getElementById('f-note').value.trim(),price:document.getElementById('f-price').value.trim(),link:document.getElementById('f-link').value.trim(),img:document.getElementById('f-img').value.trim(),order});
+  ['f-name','f-price','f-note','f-link','f-img'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('addForm').classList.remove('open');
+  toast('Artikel hinzugefügt');
+}
+
+/* ============ INIT ============ */
+(function init(){
+  // Admin via #admin oder gespeichert
+  if(location.hash==='#admin' || localStorage.getItem(LS.admin)){ document.body.classList.add('admin'); }
+  document.getElementById('admBtn').hidden=false;
+  if(document.body.classList.contains('admin')){ document.getElementById('admBtn').classList.add('on'); document.getElementById('admBtn').innerHTML='<i class="ti ti-check"></i> Fertig'; }
+
+  loadLocal();
+  if(!Object.keys(items).length){ SEED.forEach(it=>items[it.id]=it); }
+  render();
+  initFirebase();
+
+  // Refresh beim Zurückkehren
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && online) render(); });
+})();
+</script>
+</body>
+</html>
