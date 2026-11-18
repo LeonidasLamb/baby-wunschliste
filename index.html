@@ -211,7 +211,15 @@ body.admin .add-wrap{display:block}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 /* ============ KONFIG ============ */
-const FIREBASE_CONFIG = null; /* <-- wird beim Deploy ersetzt */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDimWjt4TZ_83_WGzkIW_Kmu0FkAP150Uw",
+  authDomain: "baby-liste.firebaseapp.com",
+  databaseURL: "https://baby-liste-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "baby-liste",
+  storageBucket: "baby-liste.firebasestorage.app",
+  messagingSenderId: "122337855089",
+  appId: "1:122337855089:web:fff434027107e4eade3dd0"
+};
 
 /* Seed-Artikel (Preise im Bearbeiten-Modus ergänzen) */
 const SEED_VERSION = 5;
