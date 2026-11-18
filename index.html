@@ -209,13 +209,14 @@ body.admin .add-wrap{display:block}
 /* ============ KONFIG ============ */
 const FIREBASE_CONFIG = null; /* <-- wird beim Deploy ersetzt */
 
-/* Seed-Artikel aus deinen Links (Preise/Bilder im Bearbeiten-Modus ergänzen) */
+/* Seed-Artikel (Preise im Bearbeiten-Modus ergänzen) */
+const SEED_VERSION = 3;
 const SEED = [
-  {id:'i1', name:'Nuna Kinderwagen-Organizer', note:'', price:'', link:'https://nunababy.eu/de/kinderwagen-organizer', img:'', order:1},
-  {id:'i2', name:'Nuna Winter-Kinderwagen-Set (Merinowolle)', note:'Chestnut oder Schwarz', price:'', link:'https://nunababy.eu/de/winter-kinderwagen-set-merinowolle', img:'', order:2},
-  {id:'i3', name:'Nuna Winter-Fußsackset mit Handschuhen', note:'Biscotti', price:'', link:'https://www.babysparadies.com/Nuna+Winterfusssackset+mit+Handschuhe+Biscotti.htm', img:'', order:3},
-  {id:'i4', name:'Thyseed Smart-Produkt', note:'Produkt auf Seite auswählen', price:'', link:'https://www.thyseed.com/collections/all-products', img:'', order:4},
-  {id:'i5', name:'Kaufland-Artikel', note:'Produkt prüfen', price:'', link:'https://www.kaufland.de/product/551958756/', img:'', order:5},
+  {id:'i1', name:'Beistellbett', note:'mit Dach · rollbar, höhenverstellbar', price:'', link:'https://www.kaufland.de/product/551958756/', img:'img/i1.jpg', order:1},
+  {id:'i2', name:'Thyseed Babyflasche', note:'Anti-Kolik · Award Winning', price:'', link:'https://www.thyseed.com/collections/all-products', img:'img/i2.jpg', order:2},
+  {id:'i3', name:'Nuna Winter-Fußsackset', note:'Biscotti · mit Handschuhen', price:'', link:'https://www.babysparadies.com/Nuna+Winterfusssackset+mit+Handschuhe+Biscotti.htm', img:'img/i3.jpg', order:3},
+  {id:'i4', name:'Nuna Winter-Set Merinowolle', note:'Schwarz', price:'', link:'https://nunababy.eu/de/winter-kinderwagen-set-merinowolle', img:'img/i4.jpg', order:4},
+  {id:'i5', name:'Nuna Kinderwagen-Organizer', note:'', price:'', link:'https://nunababy.eu/de/kinderwagen-organizer', img:'img/i5.jpg', order:5},
 ];
 
 /* ============ STATE ============ */
@@ -393,7 +394,12 @@ function addItem(){
   if(document.body.classList.contains('admin')){ document.getElementById('admBtn').classList.add('on'); document.getElementById('admBtn').innerHTML='<i class="ti ti-check"></i> Fertig'; }
 
   loadLocal();
-  if(!Object.keys(items).length){ SEED.forEach(it=>items[it.id]=it); }
+  const sv=localStorage.getItem('bwl-sv');
+  if(String(sv)!==String(SEED_VERSION) || !Object.keys(items).length){
+    items={}; SEED.forEach(it=>items[it.id]={...it});
+    try{localStorage.setItem('bwl-sv',String(SEED_VERSION));}catch(e){}
+    cacheLocal();
+  }
   render();
   initFirebase();
 
