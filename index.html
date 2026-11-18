@@ -93,6 +93,8 @@ body:not(.admin) .thumb .cam{display:none}
 .linkico{flex-shrink:0;margin-top:2px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--gold-t);text-decoration:none;font-size:14px;transition:all .18s;background:var(--c2)}
 .linkico:hover{background:var(--gold);color:#1C1509;border-color:var(--gold);transform:scale(1.05)}
 .note{font-family:var(--sans);font-size:12px;letter-spacing:.02em;color:var(--ink4)}
+.colors{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-family:var(--sans);font-size:10.5px;font-weight:500;letter-spacing:.03em;color:var(--gold-t);border:1px solid var(--line2);border-radius:20px;padding:2px 10px;background:var(--c2);white-space:nowrap}
 .price{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--gold-t);letter-spacing:.01em;font-variant-numeric:tabular-nums;margin-top:1px}
 .price .ca{font-weight:400;color:var(--ink4);font-size:11px;margin-right:3px;letter-spacing:.04em}
 .price.empty{color:var(--ink4);font-weight:400;font-style:italic;font-family:var(--serif);font-size:15px}
@@ -215,8 +217,9 @@ body.admin .add-wrap{display:block}
       <div class="fg"><label>Produktname</label><input id="f-name" placeholder="z.B. Nuna Kinderwagen-Organizer"/></div>
       <div class="frow">
         <div class="fg"><label>Preis (€, grob)</label><input id="f-price" placeholder="z.B. 39,90"/></div>
-        <div class="fg"><label>Farbe / Notiz</label><input id="f-note" placeholder="z.B. Chestnut"/></div>
+        <div class="fg"><label>Notiz</label><input id="f-note" placeholder="z.B. mit Handschuhen"/></div>
       </div>
+      <div class="fg"><label>Farben (mehrere mit Komma)</label><input id="f-colors" placeholder="z.B. Chestnut, Schwarz, Biscotti"/></div>
       <div class="fg"><label>Link (günstigster Anbieter)</label><input id="f-link" placeholder="https://…"/></div>
       <div class="fg"><label>Bild-URL (optional)</label><input id="f-img" placeholder="https://…/bild.jpg"/></div>
       <div class="fact">
@@ -353,9 +356,14 @@ function render(){
     const camOverlay = isAdmin ? `<span class="cam"><i class="ti ti-camera"></i><small>Foto</small></span>` : '';
     const thumb = `<div class="thumb"${isAdmin?` onclick="uploadPhoto('${it.id}')" style="cursor:pointer"`:''}>${thumbInner}${camOverlay}</div>`;
     const linkico = it.link ? `<a class="linkico" href="${esc(it.link)}" target="_blank" rel="noopener" title="Zum Produkt"><i class="ti ti-external-link"></i></a>` : '';
-    const nameHtml = it.link
-      ? `<a href="${esc(it.link)}" target="_blank" rel="noopener"><span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span></a>`
-      : `<span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span>`;
+    const nameSpan = `<span class="editable" data-id="${it.id}" data-f="name" contenteditable="false">${esc(it.name)}</span>`;
+    const nameHtml = (it.link && !isAdmin)
+      ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${nameSpan}</a>`
+      : nameSpan;
+    const colorList=(it.colors||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const colorsHtml = colorList.length
+      ? `<div class="colors">${colorList.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>`
+      : '';
 
     const action = taken
       ? `<span class="taken-badge"><i class="ti ti-gift"></i> Verschenkt${r.by?' von '+esc(r.by):''}</span>
@@ -371,11 +379,13 @@ function render(){
           <div class="name">${nameHtml}</div>
           ${linkico}
           <div class="adm">
+            <button class="adm-btn" onclick="editColors('${it.id}')" title="Farben"><i class="ti ti-palette"></i></button>
             <button class="adm-btn" onclick="editLink('${it.id}')" title="Link ändern"><i class="ti ti-link"></i></button>
             <button class="adm-btn del" onclick="removeItem('${it.id}')" title="Löschen"><i class="ti ti-trash"></i></button>
           </div>
         </div>
         ${noteHtml}
+        ${colorsHtml}
         <div class="price ${price?'':'empty'} editable" data-id="${it.id}" data-f="price" contenteditable="false">${price?`<span class="ca">ca.</span>${price}`:'Preis folgt'}</div>
         <div class="act">${action}</div>
       </div>
@@ -444,6 +454,11 @@ function editLink(id){
   const link=window.prompt('Link (günstigster Anbieter):', it.link||'');
   if(link!==null){ it.link=link.trim(); saveItem(it); toast('Link aktualisiert'); }
 }
+function editColors(id){
+  const it=items[id]; if(!it)return;
+  const c=window.prompt('Farben (mehrere mit Komma trennen):', it.colors||'');
+  if(c!==null){ it.colors=c.trim(); saveItem(it); toast('Farben aktualisiert'); }
+}
 function uploadPhoto(id){
   const inp=document.getElementById('fileInput');
   inp.onchange=()=>{
@@ -468,8 +483,8 @@ function addItem(){
   if(!name){ toast('Bitte einen Namen eingeben'); return; }
   const id='i'+Date.now().toString(36);
   const order=(Math.max(0,...Object.values(items).map(i=>i.order||0))+1);
-  saveItem({id,name,note:document.getElementById('f-note').value.trim(),price:document.getElementById('f-price').value.trim(),link:document.getElementById('f-link').value.trim(),img:document.getElementById('f-img').value.trim(),order});
-  ['f-name','f-price','f-note','f-link','f-img'].forEach(i=>document.getElementById(i).value='');
+  saveItem({id,name,note:document.getElementById('f-note').value.trim(),colors:document.getElementById('f-colors').value.trim(),price:document.getElementById('f-price').value.trim(),link:document.getElementById('f-link').value.trim(),img:document.getElementById('f-img').value.trim(),order});
+  ['f-name','f-price','f-note','f-colors','f-link','f-img'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('addForm').classList.remove('open');
   toast('Artikel hinzugefügt');
 }
